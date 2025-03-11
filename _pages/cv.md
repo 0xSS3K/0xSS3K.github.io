@@ -13,7 +13,6 @@ Educación
 ======
 * INE - eJunior Penetration Tester  
 * HackTheBox
-* IP Los Leones (incompleto) 
 
 <!--Work experience
 ======
