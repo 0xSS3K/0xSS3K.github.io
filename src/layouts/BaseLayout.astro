@@ -1,0 +1,87 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header   from '../components/Header.astro';
+import Footer   from '../components/Footer.astro';
+import maskL from '../assets/mask.txt?raw';
+import maskR from '../assets/mask-right.txt?raw';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title, description } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <BaseHead title={title} description={description} />
+  </head>
+  <body>
+    <!-- Decorative background masks — aria-hidden, no pointer events -->
+    <pre class="bg-ascii bg-ascii-left"  aria-hidden="true">{maskL}</pre>
+    <pre class="bg-ascii bg-ascii-right" aria-hidden="true">{maskR}</pre>
+
+    <Header />
+    <div class="site-wrapper">
+      <main>
+        <slot />
+      </main>
+    </div>
+    <Footer />
+  </body>
+</html>
+
+<style>
+  /* ── Shared base for both decorative ASCII masks ──────────────────
+     Fixed behind all content, no interactivity, no visible box. */
+  .bg-ascii {
+    position: fixed;
+    top: 42%;
+    transform: translateY(-50%);
+    z-index: 0;
+
+    /* Neutralise global pre styles — no box, border, padding */
+    background: transparent;
+    border: none;
+    outline: none;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+    overflow: visible;
+
+    /* Typography */
+    font-family: var(--font-mono);
+    font-size: clamp(3px, 0.55vw, 7px);
+    line-height: 1;
+    white-space: pre;
+
+    /* Very dim — texture only */
+    color: #ffffff;
+    opacity: 0.15;
+
+    /* Purely decorative */
+    pointer-events: none;
+    user-select: none;
+    -webkit-font-smoothing: none;
+    font-smooth: never;
+  }
+
+  /* ── Positioning — only difference between the two ─────────────── */
+  .bg-ascii-left  { left:  2.5rem; }
+  .bg-ascii-right { right: 2.5rem; }
+
+  /* Content layer sits above both masks */
+  :global(body > .site-wrapper),
+  :global(body > header),
+  :global(body > footer) {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Hide on narrow viewports so masks don't overlap content */
+  @media (max-width: 1100px) {
+    .bg-ascii { display: none; }
+  }
+</style>

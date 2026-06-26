@@ -1,0 +1,85 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCerts } from '../../lib/certs';
+import { flattenFiles } from '../../lib/cert-tree';
+
+const certs = await getCerts();
+---
+
+<BaseLayout title="certs" description="Notas y write-ups por certificación.">
+  <h1>// certs</h1>
+
+  {certs.length === 0 && (
+    <p class="none">nothing yet. the archive waits.</p>
+  )}
+
+  {certs.map((cert) => {
+    const first = flattenFiles(cert.tree)[0];
+    const href = first ? `/certs/${first.slug}` : `/certs/${cert.slug}`;
+    return (
+      <article class="cert-card panel">
+        <a href={`/certs/${cert.slug}`} class="cert-card__title">
+          {cert.meta.name}
+        </a>
+        <p class="cert-card__meta">
+          {[cert.meta.full, cert.meta.issuer].filter(Boolean).join(' // ')}
+        </p>
+        {cert.meta.description && (
+          <p class="cert-card__desc">{cert.meta.description}</p>
+        )}
+        <p class="cert-card__foot">
+          <span class="cert-card__count">{cert.count} notas</span>
+          <a href={href}>entrar &rsaquo;</a>
+        </p>
+      </article>
+    );
+  })}
+</BaseLayout>
+
+<style>
+  h1 {
+    color: var(--text-dim);
+    font-weight: 400;
+    font-size: 0.88rem;
+    letter-spacing: 0.05em;
+    margin-bottom: 1.5rem;
+  }
+  .none {
+    color: var(--text-dim);
+    font-size: 0.88rem;
+  }
+
+  .cert-card {
+    transition: border-color 0.15s ease;
+  }
+  .cert-card:hover { border-color: var(--accent); }
+
+  .cert-card__title {
+    display: inline-block;
+    color: var(--text-bold);
+    font-weight: 700;
+    font-size: 1.15rem;
+    letter-spacing: 0.04em;
+  }
+  .cert-card__title:hover { color: var(--text-bold); }
+
+  .cert-card__meta {
+    color: var(--text-dim);
+    font-size: 0.78rem;
+    letter-spacing: 0.03em;
+    margin: 0.3rem 0 0.8rem;
+  }
+  .cert-card__desc {
+    color: var(--text);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+  .cert-card__foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin: 0;
+    font-size: 0.82rem;
+  }
+  .cert-card__count { color: var(--text-dim); }
+</style>

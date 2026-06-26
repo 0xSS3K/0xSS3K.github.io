@@ -1,0 +1,135 @@
+---
+import { render } from 'astro:content';
+import CertLayout from '../../layouts/CertLayout.astro';
+import { getCerts, getCert } from '../../lib/certs';
+import { flattenFiles, type CertTreeNode } from '../../lib/cert-tree';
+
+export async function getStaticPaths() {
+  const certs = await getCerts();
+  const paths: Array<{
+    params: { slug: string };
+    props: { certSlug: string; node: CertTreeNode | null };
+  }> = [];
+
+  for (const cert of certs) {
+    // Cert root → overview page.
+    paths.push({ params: { slug: cert.slug }, props: { certSlug: cert.slug, node: null } });
+    // One page per note.
+    for (const node of flattenFiles(cert.tree)) {
+      paths.push({ params: { slug: node.slug }, props: { certSlug: cert.slug, node } });
+    }
+  }
+  return paths;
+}
+
+const { certSlug, node } = Astro.props;
+const cert = (await getCert(certSlug))!;
+
+// ── Note page ───────────────────────────────────────────────────────────
+const entry = node?.entry;
+const { Content } = entry ? await render(entry as any) : { Content: null };
+
+const tags = (entry?.data?.tags ?? []) as string[];
+const tagStr = tags.map((t) => `tag:${t}`).join(' // ');
+
+// Breadcrumb: ancestor folder names along the active slug (cert excluded).
+function trail(nodes: CertTreeNode[], slug: string, acc: string[] = []): string[] {
+  for (const n of nodes) {
+    if (n.type !== 'folder' || !n.children) continue;
+    if (slug === n.slug || slug.startsWith(n.slug + '/')) {
+      return trail(n.children, slug, [...acc, n.name]);
+    }
+  }
+  return acc;
+}
+const crumbs = node ? trail(cert.tree, node.slug) : [];
+
+const heading = node ? node.name : (cert.meta.full ?? cert.meta.name);
+const pageTitle = node ? `${node.name} · ${cert.meta.name}` : cert.meta.name;
+---
+
+<CertLayout
+  cert={cert}
+  activeSlug={node ? node.slug : undefined}
+  title={pageTitle}
+  description={node ? undefined : cert.meta.description}
+>
+  {node ? (
+    <Fragment>
+      <header class="note-header">
+        {crumbs.length > 0 && (
+          <p class="note-trail">{crumbs.join(' / ')}</p>
+        )}
+        <h1>{heading}</h1>
+        {tagStr && <p class="post-meta">{tagStr}</p>}
+      </header>
+      <Content />
+    </Fragment>
+  ) : (
+    <Fragment>
+    <header class="note-header">
+      <h1>{heading}</h1>
+      {cert.meta.issuer && <p class="post-meta">{cert.meta.issuer} // {cert.count} notas</p>}
+    </header>
+    {cert.meta.description && <p class="overview-lead">{cert.meta.description}</p>}
+    <p class="overview-hint">Usa el índice lateral para navegar las notas, o empieza por la primera sección.</p>
+    <ul class="overview-sections">
+      {cert.tree.filter((n) => n.type === 'folder').map((section) => {
+        const first = flattenFiles(section.children ?? [])[0];
+        return (
+          <li>
+            {first ? (
+              <a href={`/certs/${first.slug}`}>{section.name}</a>
+            ) : (
+              <span>{section.name}</span>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+    </Fragment>
+  )}
+</CertLayout>
+
+<style>
+  .note-header {
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+  }
+  .note-trail {
+    color: var(--text-dim);
+    font-size: 0.76rem;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.5rem;
+  }
+  .note-header h1 { margin-bottom: 0.6rem; }
+
+  .overview-lead {
+    color: var(--text);
+    margin-bottom: 1.5rem;
+  }
+  .overview-hint {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
+  }
+  .overview-sections {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 0.5rem;
+  }
+  .overview-sections li a {
+    display: block;
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 0.7rem 1rem;
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+  .overview-sections li a:hover {
+    border-color: var(--accent);
+    color: var(--text-bold);
+    text-decoration: none;
+  }
+</style>

@@ -1,0 +1,28 @@
+---
+import { SITE_NAME, SITE_DESCRIPTION } from '../config';
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title       = SITE_NAME,
+  description = SITE_DESCRIPTION,
+} = Astro.props;
+
+const pageTitle = title === SITE_NAME ? SITE_NAME : `${title} // ${SITE_NAME}`;
+---
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="generator" content={Astro.generator} />
+
+<title>{pageTitle}</title>
+<meta name="description" content={description} />
+
+<!-- Favicon — a plain text one; replace public/favicon.svg as desired -->
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+<!-- No analytics. No external scripts. No tracking. -->

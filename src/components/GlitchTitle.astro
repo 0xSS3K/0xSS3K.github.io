@@ -1,0 +1,85 @@
+---
+interface Props {
+  title: string;
+  tag?: 'h1' | 'p';
+}
+const { title, tag: Tag = 'h1' } = Astro.props;
+---
+
+<!-- The glitch effect is pure CSS via ::before / ::after.
+     Both pseudo-elements are absolute-positioned clones of the text,
+     colored with the glitch channels and offset slightly in X.
+     A keyframe clips a random horizontal band per frame to give the
+     appearance of a misaligned scan-line. Kept slow and rare so it
+     reads as "damaged signal", not "90s rave". -->
+<Tag class="glitch" data-text={title} aria-label={title}>{title}</Tag>
+
+<style>
+  /* ── Container ─────────────────────────────────────────────────── */
+  .glitch {
+    position: relative;
+    display: inline-block;
+    color: var(--text-bold);
+    font-size: clamp(1.8rem, 5vw, 2.8rem);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1.1;
+
+    /* Contain the overflowing pseudo-elements */
+    overflow: visible;
+  }
+
+  /* ── Shared pseudo-element base ─────────────────────────────────── */
+  .glitch::before,
+  .glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    /* Start invisible; animation cycles make them appear briefly */
+    opacity: 0;
+  }
+
+  /* ── Red channel (shift right slightly) ─────────────────────────── */
+  .glitch::before {
+    color: var(--glitch-r);
+    transform: translateX(2px);
+    animation: glitch-r 8s steps(1) infinite;
+  }
+
+  /* ── Cyan channel (shift left slightly) ─────────────────────────── */
+  .glitch::after {
+    color: var(--glitch-c);
+    transform: translateX(-2px);
+    animation: glitch-c 8s steps(1) infinite;
+    /* offset by half the cycle so they don't perfectly overlap */
+    animation-delay: 0.4s;
+  }
+
+  /* ── Keyframes — clip a thin horizontal band, then hide again ────── */
+  /* The clip-path values create a narrow strip of visible text.
+     Most of the cycle the opacity is 0 → no distraction while reading. */
+  @keyframes glitch-r {
+    0%,  94% { opacity: 0; }
+    95%       { opacity: 1; clip-path: inset(30% 0 60% 0); }
+    96%       { opacity: 1; clip-path: inset(60% 0 20% 0); }
+    97%       { opacity: 1; clip-path: inset(10% 0 75% 0); }
+    98%, 100% { opacity: 0; }
+  }
+
+  @keyframes glitch-c {
+    0%,  90% { opacity: 0; }
+    91%       { opacity: 1; clip-path: inset(55% 0 30% 0); }
+    92%       { opacity: 1; clip-path: inset(20% 0 65% 0); }
+    93%       { opacity: 1; clip-path: inset(70% 0 10% 0); }
+    94%, 100% { opacity: 0; }
+  }
+
+  /* ── Respect reduced-motion preference ──────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    .glitch::before,
+    .glitch::after {
+      display: none;
+    }
+  }
+</style>

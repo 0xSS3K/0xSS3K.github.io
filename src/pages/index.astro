@@ -1,0 +1,94 @@
+---
+import BaseLayout  from '../layouts/BaseLayout.astro';
+import GlitchTitle from '../components/GlitchTitle.astro';
+import PostCard    from '../components/PostCard.astro';
+import { getCollection } from 'astro:content';
+import { SITE_NAME, MANIFESTO } from '../config';
+
+const isDev = import.meta.env.DEV;
+
+const allPosts = await getCollection('posts', ({ data }) =>
+  isDev ? true : !data.draft
+);
+
+// Sort descending by date, show latest 5
+const latest = allPosts
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+  .slice(0, 5);
+---
+
+<BaseLayout>
+  <section class="hero">
+    <div class="title-wrap">
+      <GlitchTitle title={SITE_NAME} />
+    </div>
+    <!-- Edit MANIFESTO in src/config.ts -->
+    <pre class="manifesto">{MANIFESTO}</pre>
+  </section>
+
+  <hr />
+
+  <section class="latest-posts">
+    <h2>// recent activity</h2>
+    {latest.length === 0 && (
+      <p class="none">no posts yet. the void is patient.</p>
+    )}
+    {latest.map(post => (
+      <PostCard
+        title={post.data.title}
+        date={post.data.date}
+        slug={post.id}
+        description={post.data.description}
+        tags={post.data.tags}
+      />
+    ))}
+    {allPosts.length > 5 && (
+      <p class="see-all"><a href="/posts">// see all posts →</a></p>
+    )}
+  </section>
+</BaseLayout>
+
+<style>
+  .hero {
+    margin-bottom: 2.5rem;
+  }
+
+  /* Centering wrapper: text-align centers inline-block .glitch without
+     affecting the ::before/::after pseudo-elements, which are positioned
+     relative to .glitch itself (inset: 0 on a position:absolute child of
+     position:relative .glitch) — they stay pixel-perfect over the text. */
+  .title-wrap {
+    padding-top: 3.5rem;
+    text-align: center;
+  }
+
+  .manifesto {
+    margin-top: 1.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.88rem;
+    color: var(--text-dim);
+    background: none;
+    border: none;
+    padding: 0;
+    white-space: pre-wrap;
+    line-height: 1.7;
+  }
+
+  .latest-posts h2 {
+    margin-bottom: 1.2rem;
+    color: var(--text-dim);
+    font-size: 0.88rem;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+  }
+
+  .none {
+    color: var(--text-dim);
+    font-size: 0.88rem;
+  }
+
+  .see-all {
+    margin-top: 0.5rem;
+    font-size: 0.88rem;
+  }
+</style>

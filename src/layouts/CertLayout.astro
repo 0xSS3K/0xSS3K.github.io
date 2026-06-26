@@ -1,0 +1,185 @@
+---
+import BaseHead    from '../components/BaseHead.astro';
+import Header       from '../components/Header.astro';
+import Footer       from '../components/Footer.astro';
+import CertSidebar  from '../components/CertSidebar.astro';
+import { NAV_ORNAMENT } from '../config';
+import type { Cert } from '../lib/certs';
+
+interface Props {
+  cert: Cert;
+  activeSlug?: string;
+  title?: string;
+  description?: string;
+}
+
+const { cert, activeSlug, title, description } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en" class="cert-view">
+  <head>
+    <BaseHead title={title} description={description} />
+  </head>
+  <body>
+    <Header />
+
+    <!-- Pure-CSS drawer: the checkbox holds the open/closed state on mobile. -->
+    <div class="cert-shell">
+      <input type="checkbox" id="cert-nav" class="cert-nav-state" hidden />
+
+      <label for="cert-nav" class="cert-nav-toggle">
+        <span aria-hidden="true">☰</span> índice
+      </label>
+      <label for="cert-nav" class="cert-nav-scrim" aria-hidden="true"></label>
+
+      <aside class="cert-sidebar" aria-label={`${cert.meta.name} index`}>
+        <a href={`/certs/${cert.slug}`} class="cert-sidebar__head">
+          {NAV_ORNAMENT} {cert.meta.name}
+        </a>
+        <p class="cert-sidebar__count">{cert.count} notas</p>
+        <nav class="cert-sidebar__nav">
+          <CertSidebar nodes={cert.tree} activeSlug={activeSlug} />
+        </nav>
+      </aside>
+
+      <main class="cert-main">
+        <article class="prose">
+          <slot />
+        </article>
+      </main>
+    </div>
+
+    <Footer />
+  </body>
+</html>
+
+<style>
+  /* Wide layout — much broader than the standard site wrapper, but capped and
+     centered with a moderate side padding so the whole block (sidebar +
+     content) eases away from the screen edges. NOT the narrow BaseLayout. */
+  .cert-shell {
+    width: 100%;
+    max-width: 1450px;
+    margin-inline: auto;
+    padding: 2rem 2rem 0;
+    display: grid;
+    grid-template-columns: 250px minmax(0, 1fr);
+    gap: 2.5rem;
+    align-items: start;
+  }
+
+  /* ── Sidebar (desktop: sticky rail) ─────────────────────────────── */
+  .cert-sidebar {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+    padding-right: 0.5rem;
+  }
+
+  .cert-sidebar__head {
+    display: block;
+    color: var(--text-bold);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    font-size: 0.95rem;
+  }
+  .cert-sidebar__head:hover { text-decoration: none; color: var(--text-bold); }
+
+  .cert-sidebar__count {
+    color: var(--text-dim);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    margin: 0.2rem 0 1rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* The sidebar's inner nav must not inherit the global top-nav chrome. */
+  .cert-sidebar__nav {
+    padding: 0;
+    margin: 0;
+    border: none;
+    font-size: inherit;
+  }
+
+  /* ── Content column ─────────────────────────────────────────────── */
+  .cert-main {
+    min-width: 0; /* allow wide <pre> to scroll instead of blowing out grid */
+    padding-bottom: 4rem;
+  }
+
+  /* Comfortable measure, centered WITHIN its own column (not flush against the
+     sidebar nor stretched to the right edge). Code blocks scroll within it. */
+  .cert-main .prose {
+    max-width: 80ch;
+    margin-inline: auto;
+  }
+
+  /* Prose link tone, matching PostLayout. */
+  .prose :global(a)        { color: var(--accent); }
+  .prose :global(a:hover)  { color: var(--text-bold); }
+  .prose :global(h2)       { margin-top: 2.5rem; }
+  .prose :global(h3)       { margin-top: 2rem; }
+
+  /* ── Mobile drawer controls (hidden on desktop) ─────────────────── */
+  .cert-nav-toggle,
+  .cert-nav-scrim { display: none; }
+
+  @media (max-width: 880px) {
+    .cert-shell {
+      display: block;
+      padding-top: 1.25rem;
+    }
+
+    .cert-nav-toggle {
+      display: inline-block;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      letter-spacing: 0.05em;
+      border: 1px solid var(--border);
+      padding: 0.4rem 0.8rem;
+      cursor: pointer;
+      margin-bottom: 1.5rem;
+    }
+    .cert-nav-toggle:hover { color: var(--text-bold); border-color: var(--accent); }
+
+    /* Off-canvas drawer. */
+    .cert-sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: min(80vw, 320px);
+      max-height: none;
+      z-index: 60;
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 1.25rem;
+      transform: translateX(-100%);
+      transition: transform 0.2s ease;
+    }
+
+    .cert-nav-scrim {
+      position: fixed;
+      inset: 0;
+      z-index: 55;
+      background: rgba(0, 0, 0, 0.6);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .cert-nav-state:checked ~ .cert-sidebar { transform: translateX(0); }
+    .cert-nav-state:checked ~ .cert-nav-scrim {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cert-sidebar,
+    .cert-nav-scrim { transition: none; }
+  }
+</style>

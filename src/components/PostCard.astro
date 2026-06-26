@@ -1,0 +1,57 @@
+---
+interface Props {
+  title: string;
+  date: Date;
+  slug: string;
+  description?: string;
+  tags?: string[];
+}
+
+const { title, date, slug, description, tags = [] } = Astro.props;
+
+const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '.');
+const tagStr  = tags.map(t => `tag:${t}`).join(' // ');
+const meta    = [dateStr, tagStr].filter(Boolean).join(' // ');
+---
+
+<article class="post-card panel">
+  <a href={`/posts/${slug}`} class="post-card__title">{title}</a>
+  <p class="post-meta">{meta}</p>
+  {description && <p class="post-card__desc">{description}</p>}
+</article>
+
+<style>
+  .post-card {
+    display: block;
+    transition: border-color 0.15s ease;
+  }
+
+  .post-card:hover {
+    border-color: var(--accent);
+  }
+
+  .post-card__title {
+    display: block;
+    color: var(--text-bold);
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 0.4rem;
+    text-decoration: none;
+  }
+
+  .post-card__title:hover {
+    color: var(--text-bold);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .post-meta {
+    margin-bottom: 0.5rem;
+  }
+
+  .post-card__desc {
+    color: var(--text-dim);
+    font-size: 0.88rem;
+    margin-bottom: 0;
+  }
+</style>

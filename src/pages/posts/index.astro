@@ -1,0 +1,48 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PostCard   from '../../components/PostCard.astro';
+import { getCollection } from 'astro:content';
+
+const isDev = import.meta.env.DEV;
+
+const posts = await getCollection('posts', ({ data }) =>
+  isDev ? true : !data.draft
+);
+
+const sorted = posts.sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+);
+---
+
+<BaseLayout title="posts">
+  <h1>// all posts</h1>
+
+  {sorted.length === 0 && (
+    <p class="none">nothing yet. the archive waits.</p>
+  )}
+
+  {sorted.map(post => (
+    <PostCard
+      title={post.data.title}
+      date={post.data.date}
+      slug={post.id}
+      description={post.data.description}
+      tags={post.data.tags}
+    />
+  ))}
+</BaseLayout>
+
+<style>
+  h1 {
+    color: var(--text-dim);
+    font-weight: 400;
+    font-size: 0.88rem;
+    letter-spacing: 0.05em;
+    margin-bottom: 1.5rem;
+  }
+
+  .none {
+    color: var(--text-dim);
+    font-size: 0.88rem;
+  }
+</style>

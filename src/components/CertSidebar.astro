@@ -1,0 +1,98 @@
+---
+import type { CertTreeNode } from '../lib/cert-tree';
+import Self from './CertSidebar.astro';
+
+interface Props {
+  nodes: CertTreeNode[];
+  activeSlug?: string;
+}
+
+const { nodes, activeSlug } = Astro.props;
+
+// A folder is "on the active path" when the active note lives inside it, so we
+// render it pre-expanded. Slugs are hierarchical, so a prefix test suffices.
+function onActivePath(node: CertTreeNode): boolean {
+  if (!activeSlug) return false;
+  return activeSlug === node.slug || activeSlug.startsWith(node.slug + '/');
+}
+---
+
+<ul class="tree">
+  {nodes.map((node) =>
+    node.type === 'folder' ? (
+      <li class="tree__folder">
+        <details open={onActivePath(node)}>
+          <summary>
+            <span class="tw" aria-hidden="true"></span>{node.name}
+          </summary>
+          <Self nodes={node.children ?? []} activeSlug={activeSlug} />
+        </details>
+      </li>
+    ) : (
+      <li class="tree__file">
+        <a
+          href={`/certs/${node.slug}`}
+          aria-current={node.slug === activeSlug ? 'page' : undefined}
+        >
+          {node.name}
+        </a>
+      </li>
+    ),
+  )}
+</ul>
+
+<style>
+  .tree {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 0.82rem;
+    line-height: 1.45;
+  }
+
+  /* Nested lists indent under their parent, with a faint guide rule. */
+  .tree .tree {
+    margin-left: 0.55rem;
+    padding-left: 0.6rem;
+    border-left: 1px solid var(--border);
+  }
+
+  details > summary {
+    list-style: none;
+    cursor: pointer;
+    color: var(--text-dim);
+    padding: 0.18rem 0;
+    user-select: none;
+    transition: color 0.15s ease;
+  }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary:hover { color: var(--text); }
+
+  /* Collapse/expand markers driven purely by [open]. */
+  .tw::before { content: '▸'; }
+  details[open] > summary .tw::before { content: '▾'; }
+  .tw {
+    display: inline-block;
+    width: 1rem;
+    color: var(--accent);
+    font-size: 0.7rem;
+  }
+
+  .tree__file a {
+    display: block;
+    color: var(--text-dim);
+    padding: 0.18rem 0 0.18rem 1rem;
+    border-left: 2px solid transparent;
+    margin-left: -0.6rem; /* align the active bar with the guide rule */
+    padding-left: 1.5rem;
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+  .tree__file a:hover {
+    color: var(--text);
+    text-decoration: none;
+  }
+  .tree__file a[aria-current='page'] {
+    color: var(--text-bold);
+    border-left-color: var(--accent);
+  }
+</style>
