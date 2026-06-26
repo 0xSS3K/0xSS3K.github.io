@@ -1,6 +1,6 @@
 ---
 title: "htb // yummy"
-date: 2026-05-15
+date: 2026-06-01
 description: "writeup ténico sobre la máquina ya retirada llamada Yummy"
 tags: ["enum", "linux", "htb", "writeup"]
 draft: false
